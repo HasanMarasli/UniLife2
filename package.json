@@ -1,0 +1,24 @@
+{
+  "name": "unilife2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "deney.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ulas-Yalcin/UniLife2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Ulas-Yalcin/UniLife2/issues"
+  },
+  "homepage": "https://github.com/Ulas-Yalcin/UniLife2#readme",
+  "dependencies": {
+    "mysql2": "^3.15.3"
+  }
+}
