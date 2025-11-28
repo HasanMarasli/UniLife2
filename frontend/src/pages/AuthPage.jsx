@@ -1,6 +1,49 @@
 import React, { useState } from 'react';
 import './AuthPage.css';
 
+const describeFetchError = ({ action, url, method, status, serverMessage, originalMessage }) => {
+	const segments = [
+		`${action} sırasında hata oluştu.`,
+		`URL: ${url}`,
+		method && `Metot: ${method}`,
+		status && `HTTP durumu: ${status}`,
+		serverMessage && `Sunucu mesajı: ${serverMessage}`,
+		originalMessage && `Açıklama: ${originalMessage}`
+	].filter(Boolean);
+	return segments.join(' ');
+};
+
+const fetchJson = async (url, options = {}, action) => {
+	const method = (options.method ?? 'GET').toUpperCase();
+	try {
+		const res = await fetch(url, options);
+		const data = await res.json().catch(() => null);
+		if (!res.ok) {
+			const message = describeFetchError({
+				action,
+				url,
+				method,
+				status: res.status,
+				serverMessage: data?.message || data?.error || 'Sunucu isteğine olumsuz yanıt verdi',
+				originalMessage: 'Yanıt başarılı şekilde çözülse de HTTP durumu beklendiği gibi değildi'
+			});
+			throw new Error(message);
+		}
+		return data;
+	} catch (err) {
+		const message = describeFetchError({
+			action,
+			url,
+			method,
+			status: err.status,
+			serverMessage: err.message,
+			originalMessage: err.message
+		});
+		console.error(`[${action}]`, { url, method, error: err });
+		throw new Error(message);
+	}
+};
+
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -68,19 +111,15 @@ const AuthPage = () => {
     setLoading(true);
     try {
       if (isLogin) {
-        // Login
-        const res = await fetch('http://localhost:5000/api/auth/login', {
+        const data = await fetchJson('http://localhost:5000/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ username: formData.email, password: formData.password })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Giriş yapılamadı');
+        }, 'Giriş');
         alert(`Giriş başarılı! Hoş geldin ${data.user.username}`);
       } else {
-        // Register: kod gönder
-        const res = await fetch('http://localhost:5000/api/auth/register', {
+        await fetchJson('http://localhost:5000/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -88,9 +127,7 @@ const AuthPage = () => {
             email: formData.email,
             password: formData.password
           })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Kayıt başarısız');
+        }, 'Kayıt');
         setShowVerificationInput(true);
         alert('Doğrulama kodu e-posta ile gönderildi.');
       }
@@ -109,7 +146,7 @@ const AuthPage = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify', {
+      await fetchJson('http://localhost:5000/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -118,9 +155,7 @@ const AuthPage = () => {
           password: formData.password,
           code: verificationCode
         })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      }, 'Doğrulama');
       alert('Doğrulama başarılı! Artık giriş yapabilirsiniz.');
       setShowVerificationInput(false);
       switchMode();
